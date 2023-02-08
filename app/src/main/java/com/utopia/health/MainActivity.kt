@@ -5,11 +5,9 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -21,143 +19,127 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             HealthTheme {
-                // A surface container using the 'background' color from the theme
-//                Surface(
-//                    modifier = Modifier.fillMaxSize(),
-//                    color = MaterialTheme.colors.background
-//                ) {
-//                    CalculateContent()
-//                }
                 Scaffold(topBar = {
                     TopAppBar(
                         title = { Text(text = "热量计算器") }
                     )
                 }) {
-                    Box(modifier = Modifier.padding(it)) {
-                        CalculateContent()
-                    }
+                    CalculateContent(modifier = Modifier.padding(it))
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
 private const val TAG = "MainActivity"
 
 @Composable
-fun CalculateContent() {
-    Column {
+fun CalculateContent(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(8.dp),
+    ) {
         var grams by remember { mutableStateOf(0f) }
-        var kJ by remember { mutableStateOf(0f) }
+        var kJoule by remember { mutableStateOf(0f) }
         var weight by remember { mutableStateOf(0f) }
-//        LabelLine(
-//            label = "100g热量",
-//            count = 0f,
-//            tail = "千焦",
-//            onValueChange = { kJ = it.toFloatOrNull() ?: 0f })
-        CaloriePerGramRow(
-            onValueChange = { _grams, _kCalorie ->
+        CalorieInputZone(
+            onValueChange = { _grams, _kCalorie, _weight ->
                 grams = _grams
-                kJ = _kCalorie
-            }
+                kJoule = _kCalorie
+                weight = _weight
+            },
         )
+        Log.d(TAG, "CalculateContent: grams=$grams,kJoule=$kJoule,weight=$weight")
 
-        val kK = if (grams == 0f) 0f else (kJ / grams * weight * 0.238846f)
-        val minutes = kK / 10f
+        val kCalorie = if (grams == 0f) 0f else (kJoule / grams * weight * 0.238846f)
+        val minutes = kCalorie / 10f
 
-        Log.d(TAG, "CalContent: kK=$kK, minutes=$minutes")
-        LabelLine(
-            label = "重量",
-            count = 100f,
-            tail = "g",
-            onValueChange = { weight = it.toFloatOrNull() ?: 0f })
-        LabelLine(label = "千卡", count = kK, tail = "")
-        LabelLine(label = "单车耗时", count = minutes, tail = "分钟")
+        Log.d(TAG, "CalContent: kK=$kCalorie, minutes=$minutes")
+        CardText(text = "千卡: $kCalorie")
+        CardText(text = "单车耗时: $minutes 分钟")
     }
 }
 
 @Composable
-fun CaloriePerGramRow(
-    onValueChange: ((Float, Float) -> Unit)? = null,
+fun CalorieInputZone(
+    onValueChange: ((Float, Float, Float) -> Unit)? = null,
 ) {
-
-    Row(
-        modifier = Modifier.padding(16.dp)
-    ) {
+    Column {
         var grams by remember { mutableStateOf("100") }
-        var kCalorie by remember { mutableStateOf("0") }
-
+        var kCalorie by remember { mutableStateOf("") }
+        var totalGrams by remember { mutableStateOf("") }
         fun notifyChange() {
-            onValueChange?.invoke(
-                grams.toFloatOrNull() ?: 0f,
-                kCalorie.toFloatOrNull() ?: 0f,
+            val callback = onValueChange ?: return
+            val fGrams = grams.toFloatOrDefault(0f)
+            val fKCalorie = kCalorie.toFloatOrDefault(0f)
+            val fTotalGrams = totalGrams.toFloatOrDefault(0f)
+            callback(fGrams, fKCalorie, fTotalGrams)
+        }
+        notifyChange()
+
+        Row {
+            CalorieInput(
+                label = "每份重量:克",
+                value = grams,
+                onValueChange = {
+                    grams = it
+                    notifyChange()
+                },
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            CalorieInput(
+                label = "每份热量:千焦",
+                value = kCalorie,
+                onValueChange = {
+                    kCalorie = it
+                    notifyChange()
+                },
+                modifier = Modifier.weight(1f),
             )
         }
-
-        BasicTextField(
-            value = grams,
-            onValueChange = {
-                grams = it
-                notifyChange()
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.weight(1f, false),
-        )
-        Text(text = "g热量:")
-        BasicTextField(
-            value = kCalorie,
-            onValueChange = {
-                kCalorie = it
-                notifyChange()
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.weight(1f),
-        )
-        Text(text = "千焦")
+        Row {
+            CalorieInput(
+                label = "总重量:克", value = totalGrams,
+                onValueChange = {
+                    totalGrams = it
+                    notifyChange()
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
 @Composable
-fun LabelLine(
+fun CalorieInput(
     label: String,
-    count: Float,
-    tail: String,
-    onValueChange: ((String) -> Unit)? = null,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = "$label:")
-        if (onValueChange != null) {
-            var value by remember { mutableStateOf("$count") }
-            BasicTextField(
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                value = value,
-                onValueChange = {
-                    value = it
-                    onValueChange(value)
-                },
+    OutlinedTextField(
+        label = { Text(text = label) },
+        value = value,
+        onValueChange = onValueChange,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = modifier,
+    )
+}
 
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp),
-//                .background(Color.White)
-            )
-        } else {
-            Text(
-                text = "$count",
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp)
-            )
-        }
-        Text(text = tail)
+@Composable
+fun CardText(text: String) {
+    Card(
+        elevation = 2.dp,
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth(),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(8.dp),
+        )
     }
 }
 

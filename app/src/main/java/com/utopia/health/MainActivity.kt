@@ -52,25 +52,73 @@ private const val TAG = "MainActivity"
 @Composable
 fun CalculateContent() {
     Column {
+        var grams by remember { mutableStateOf(0f) }
         var kJ by remember { mutableStateOf(0f) }
         var weight by remember { mutableStateOf(0f) }
-        LabelLine(
-            label = "100g热量",
-            count = 0f,
-            tail = "千焦",
-            onValueChange = { kJ = it.toFloatOrNull() ?: 0f })
+//        LabelLine(
+//            label = "100g热量",
+//            count = 0f,
+//            tail = "千焦",
+//            onValueChange = { kJ = it.toFloatOrNull() ?: 0f })
+        CaloriePerGramRow(
+            onValueChange = { _grams, _kCalorie ->
+                grams = _grams
+                kJ = _kCalorie
+            }
+        )
 
-        val kK = kJ * weight / 100f * 0.238846f
+        val kK = if (grams == 0f) 0f else (kJ / grams * weight * 0.238846f)
         val minutes = kK / 10f
 
         Log.d(TAG, "CalContent: kK=$kK, minutes=$minutes")
         LabelLine(
             label = "重量",
-            count = 0f,
+            count = 100f,
             tail = "g",
             onValueChange = { weight = it.toFloatOrNull() ?: 0f })
         LabelLine(label = "千卡", count = kK, tail = "")
         LabelLine(label = "单车耗时", count = minutes, tail = "分钟")
+    }
+}
+
+@Composable
+fun CaloriePerGramRow(
+    onValueChange: ((Float, Float) -> Unit)? = null,
+) {
+
+    Row(
+        modifier = Modifier.padding(16.dp)
+    ) {
+        var grams by remember { mutableStateOf("100") }
+        var kCalorie by remember { mutableStateOf("0") }
+
+        fun notifyChange() {
+            onValueChange?.invoke(
+                grams.toFloatOrNull() ?: 0f,
+                kCalorie.toFloatOrNull() ?: 0f,
+            )
+        }
+
+        BasicTextField(
+            value = grams,
+            onValueChange = {
+                grams = it
+                notifyChange()
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f, false),
+        )
+        Text(text = "g热量:")
+        BasicTextField(
+            value = kCalorie,
+            onValueChange = {
+                kCalorie = it
+                notifyChange()
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = "千焦")
     }
 }
 

@@ -52,11 +52,13 @@ fun CalculateContent(
         )
         Log.d(TAG, "CalculateContent: grams=$grams,kJoule=$kJoule,weight=$weight")
 
-        val kCalorie = if (grams == 0f) 0f else (kJoule / grams * weight * 0.238846f)
-        val minutes = kCalorie / 10f
+        val kJouleTotal = kJoule / grams * weight
+        val kCalorieTotal = if (grams == 0f) 0f else (kJouleTotal * 0.238846f)
+        val minutes = kCalorieTotal / 10f
 
-        Log.d(TAG, "CalContent: kK=$kCalorie, minutes=$minutes")
-        CardText(text = "千卡: $kCalorie")
+        Log.d(TAG, "CalContent: kK=$kCalorieTotal, minutes=$minutes")
+        CardText(text = "千焦: $kJouleTotal")
+        CardText(text = "千卡: $kCalorieTotal")
         CardText(text = "单车耗时: $minutes 分钟")
     }
 }
